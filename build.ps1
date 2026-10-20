@@ -30,7 +30,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Runtime tests failed.' }
     }
     if ($Package) {
-        $aw2Version = '0.1.1-test'
+        $aw2Version = '0.1.1'
         New-Item -ItemType Directory -Path '.\dist\plugins' -Force | Out-Null
         Copy-Item -LiteralPath '.\build\AW2PTShadowsFix.asi' -Destination '.\dist\plugins\AW2PTShadowsFix.asi' -Force
         Copy-Item -LiteralPath '.\README.md' -Destination '.\dist\AW2PTShadowsFix-README.md' -Force

@@ -49,7 +49,7 @@ done:
 }
 __declspec(dllexport) void InitializeASI(void) {
     if(InterlockedCompareExchange(&initialized,1,0))return;
-    open_log();log_line("AW2PTShadowsFix 0.1.1-test: initializing via InitializeASI.");
+    open_log();log_line("AW2PTShadowsFix 0.1.1: initializing via InitializeASI.");
     wchar_t path[32768];DWORD n=GetModuleFileNameW(NULL,path,32768);
     if(!n||n>=32768) {
         log_line("REFUSED: cannot determine host executable path.");goto done;
