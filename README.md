@@ -18,7 +18,7 @@ Use the original EXE. The supported file is 62,304,768 bytes with SHA-256:
 0e7a7b5fe05ada30ac043d96eeb658e934db96b4783479ade64495ed428b5904
 ```
 
-The filename can differ. Other builds and conflicting patches are refused. Tested on an RTX 4070; other GPUs have not been verified. Don't combine this with the patched EXE version of the fix.
+The filename can differ. Other builds and conflicting patches are refused. Tested on an RTX 4070; other GPUs have not been verified.
 
 To uninstall, close the game and remove the ASI. Keep the loader if other mods use it.
 
