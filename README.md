@@ -1,6 +1,8 @@
 # Alan Wake 2 Path Tracing Shadows Fix
 
-Fixes broken alpha-tested shadows on hair and foliage, missing grass shadows at LOD transitions, and duplicate shadows on mixed-LOD plants. Applies the fixes in memory; the game EXE stays unchanged.
+Fixes broken alpha-tested shadows on hair and foliage and missing grass shadows at LOD transitions introduced in PC version **1.2.10**. Also corrects duplicate shadows on mixed-LOD plants. Applies the fixes in memory; the game EXE stays unchanged.
+
+[Update 1.2.10](https://www.alanwake.com/story/alan-wake-2-update-notes/) moved Opacity Micromaps (OMM) and Shader Execution Reordering to the Agility SDK for support across GPU vendors. The updated OMM path was missing a pipeline support flag and used mismatched opacity indices for clustered geometry, producing blocky shadows through transparent areas. Grass had a separate registration issue that left its static far LODs out of the ray-tracing scene. This mod corrects both paths while keeping the Agility SDK implementation.
 
 ## Install
 
