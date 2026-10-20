@@ -1,0 +1,12 @@
+/build/
+/dist/
+*.asi
+*.exe
+*.dll
+*.obj
+*.o
+*.log
+*.zip
+__pycache__/
+.vs/
+.vscode/
