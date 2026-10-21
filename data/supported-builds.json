@@ -1,0 +1,224 @@
+[
+  {
+    "sha256": "0e7a7b5fe05ada30ac043d96eeb658e934db96b4783479ade64495ed428b5904",
+    "file_size": 62304768,
+    "timestamp": "0x6a7702e0",
+    "pe_offset": "0x1c8",
+    "image_size": "0x3f45000",
+    "reference_payload_rva": "0x3f44e00",
+    "payload_size": 496,
+    "relocations": [
+      {
+        "displacement": "0x126",
+        "next": "0x12a",
+        "target": "0x397ff60"
+      },
+      {
+        "displacement": "0x12b",
+        "next": "0x12f",
+        "target": "0x22aab60"
+      },
+      {
+        "displacement": "0x145",
+        "next": "0x149",
+        "target": "0x23040c5"
+      },
+      {
+        "displacement": "0x166",
+        "next": "0x16a",
+        "target": "0x225c633"
+      },
+      {
+        "displacement": "0x17b",
+        "next": "0x17f",
+        "target": "0x225c763"
+      }
+    ],
+    "patches": [
+      {
+        "rva": "0x208dab9",
+        "length": 2,
+        "helper_offset": -1,
+        "before": "32c0",
+        "after": "33c0",
+        "description": "OMM 2: full EAX zeroing"
+      },
+      {
+        "rva": "0x208dac1",
+        "length": 23,
+        "helper_offset": -1,
+        "before": "c7442450080001000fb6c0c1e00289442454488d542450",
+        "after": "488d542450c70208000100c1e0020a83ad000000894204",
+        "description": "OMM 1: pipeline OMM support bit"
+      },
+      {
+        "rva": "0x225c62b",
+        "length": 8,
+        "helper_offset": 352,
+        "before": "488b942490000000",
+        "after": "e93089ce01909090",
+        "description": "Notify static records for dual-registered objects at the per-frame common join"
+      },
+      {
+        "rva": "0x225c75b",
+        "length": 8,
+        "helper_offset": 364,
+        "before": "488b942490000000",
+        "after": "e90c88ce01909090",
+        "description": "Notify static records for dual-registered objects at the per-frame common join"
+      },
+      {
+        "rva": "0x22db63c",
+        "length": 17,
+        "helper_offset": -1,
+        "before": "c4e1f97ec848c1e8204903842440020000",
+        "after": "c4e37916c80249038424e0010000909090",
+        "description": "OMM 3: cluster-order OMM indices"
+      },
+      {
+        "rva": "0x2304078",
+        "length": 6,
+        "helper_offset": -1,
+        "before": "4883c4205bc3",
+        "after": "4889d9ebd990",
+        "description": "After static unregister, reload flags and remove dynamic registration too"
+      },
+      {
+        "rva": "0x23040c0",
+        "length": 5,
+        "helper_offset": 0,
+        "before": "48895c2408",
+        "after": "e93b0dc401",
+        "description": "Structural registration wrapper entry"
+      },
+      {
+        "rva": "0x23068bd",
+        "length": 2,
+        "helper_offset": -1,
+        "before": "eb2e",
+        "after": "ebdf",
+        "description": "Inlined destructor: reload registration flags after static removal"
+      }
+    ],
+    "name": "0.559.302.8",
+    "scheduling_rva": "0x22ad6e8",
+    "scheduling_before": "0f8436010000",
+    "scheduling_control": "0x386a768",
+    "parent": [
+      "0x225c13d",
+      "0x225c67b",
+      "0x37c2518"
+    ]
+  },
+  {
+    "sha256": "09135f128c07cfa4598b22dd4754a98b2c1f4ff816bfcb1e336ecfb4462b4163",
+    "file_size": 61416960,
+    "timestamp": "0x6acc184a",
+    "pe_offset": "0x1b0",
+    "image_size": "0x3e6c000",
+    "reference_payload_rva": "0x3e6c000",
+    "payload_size": 496,
+    "relocations": [
+      {
+        "displacement": "0x126",
+        "next": "0x12a",
+        "target": "0x38a6fd8"
+      },
+      {
+        "displacement": "0x12b",
+        "next": "0x12f",
+        "target": "0x22797b0"
+      },
+      {
+        "displacement": "0x145",
+        "next": "0x149",
+        "target": "0x22d2d65"
+      },
+      {
+        "displacement": "0x166",
+        "next": "0x16a",
+        "target": "0x222b763"
+      },
+      {
+        "displacement": "0x17b",
+        "next": "0x17f",
+        "target": "0x222b893"
+      }
+    ],
+    "patches": [
+      {
+        "rva": "0x205e779",
+        "length": 2,
+        "helper_offset": -1,
+        "before": "32c0",
+        "after": "33c0",
+        "description": "OMM 2: full EAX zeroing"
+      },
+      {
+        "rva": "0x205e781",
+        "length": 23,
+        "helper_offset": -1,
+        "before": "c7442450080001000fb6c0c1e00289442454488d542450",
+        "after": "488d542450c70208000100c1e0020a83ad000000894204",
+        "description": "OMM 1: pipeline OMM support bit"
+      },
+      {
+        "rva": "0x222b75b",
+        "length": 8,
+        "helper_offset": 352,
+        "before": "488b942490000000",
+        "after": "e9000ac401909090",
+        "description": "Notify static records for dual-registered objects at the per-frame common join"
+      },
+      {
+        "rva": "0x222b88b",
+        "length": 8,
+        "helper_offset": 364,
+        "before": "488b942490000000",
+        "after": "e9dc08c401909090",
+        "description": "Notify static records for dual-registered objects at the per-frame common join"
+      },
+      {
+        "rva": "0x22aa4b9",
+        "length": 17,
+        "helper_offset": -1,
+        "before": "c4e1f97ec848c1e8204903842440020000",
+        "after": "c4e37916c80249038424e0010000909090",
+        "description": "OMM 3: cluster-order OMM indices"
+      },
+      {
+        "rva": "0x22d2d18",
+        "length": 6,
+        "helper_offset": -1,
+        "before": "4883c4205bc3",
+        "after": "4889d9ebd990",
+        "description": "After static unregister, reload flags and remove dynamic registration too"
+      },
+      {
+        "rva": "0x22d2d60",
+        "length": 5,
+        "helper_offset": 0,
+        "before": "48895c2408",
+        "after": "e99b92b901",
+        "description": "Structural registration wrapper entry"
+      },
+      {
+        "rva": "0x22d55de",
+        "length": 2,
+        "helper_offset": -1,
+        "before": "eb2e",
+        "after": "ebdf",
+        "description": "Inlined destructor: reload registration flags after static removal"
+      }
+    ],
+    "name": "0.564.904.9",
+    "scheduling_rva": "0x227c2b8",
+    "scheduling_before": "0f844f010000",
+    "scheduling_control": "0x37915d0",
+    "parent": [
+      "0x222b26d",
+      "0x222b7a8",
+      "0x36e9dbc"
+    ]
+  }
+]

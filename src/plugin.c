@@ -1,6 +1,4 @@
 #include "aw2_core.h"
-#include "aw2_data.h"
-#include <bcrypt.h>
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -24,44 +22,26 @@ static void open_log(void) {
     wcscpy(slash+1,L"AW2PTShadowsFix.log");
     logfile=CreateFileW(path,GENERIC_WRITE,FILE_SHARE_READ,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 }
-static int verify_file(const wchar_t *path) {
-    HANDLE file=CreateFileW(path,GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_DELETE,NULL,OPEN_EXISTING,FILE_FLAG_SEQUENTIAL_SCAN,NULL);
-    if(file==INVALID_HANDLE_VALUE){log_line("REFUSED: cannot read game executable.");return 0;}
-    LARGE_INTEGER size;
-    if(!GetFileSizeEx(file,&size)||size.QuadPart!=AW2_SOURCE_SIZE){CloseHandle(file);log_line("REFUSED: unsupported EXE size. Restore the pristine supported build.");return 0;}
-    BCRYPT_ALG_HANDLE alg=NULL;BCRYPT_HASH_HANDLE hash=NULL;
-    BYTE *buffer=HeapAlloc(GetProcessHeap(),0,1024*1024),digest[32];int ok=0;
-    if(!buffer)goto done;
-    if(BCryptOpenAlgorithmProvider(&alg,BCRYPT_SHA256_ALGORITHM,NULL,0)<0)goto done;
-    if(BCryptCreateHash(alg,&hash,NULL,0,NULL,0,0)<0)goto done;
-    for(;;){DWORD got=0;if(!ReadFile(file,buffer,1024*1024,&got,NULL))goto done;
-        if(!got)break;
-        if(BCryptHashData(hash,buffer,got,0)<0)goto done;}
-    if(BCryptFinishHash(hash,digest,32,0)<0)goto done;
-    ok=memcmp(digest,aw2_hash,32)==0;
-done:
-    if(hash)BCryptDestroyHash(hash);
-    if(alg)BCryptCloseAlgorithmProvider(alg,0);
-    if(buffer)HeapFree(GetProcessHeap(),0,buffer);
-    CloseHandle(file);
-    if(!ok)log_line("REFUSED: EXE SHA-256 differs from supported pristine build. No memory patches applied.");
-    return ok;
-}
 __declspec(dllexport) void InitializeASI(void) {
     if(InterlockedCompareExchange(&initialized,1,0))return;
-    open_log();log_line("AW2PTShadowsFix 0.1.1: initializing via InitializeASI.");
+    open_log();log_line("AW2PTShadowsFix 0.1.2: initializing via InitializeASI.");
     wchar_t path[32768];DWORD n=GetModuleFileNameW(NULL,path,32768);
     if(!n||n>=32768) {
         log_line("REFUSED: cannot determine host executable path.");goto done;
     }
-    if(!verify_file(path))goto done;
+    char error[256];
+    const AW2Build *build=Aw2IdentifyFile(path,error,sizeof(error));
+    if(!build){log_line(error);goto done;}
+    char selected[128];
+    snprintf(selected,sizeof(selected),"Verified EXE profile: %s",build->name);
+    log_line(selected);
     /* Keep our code and state alive as long as game jumps can reach them. */
     HMODULE pinned=NULL;
     if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_PIN,
                           (LPCWSTR)(uintptr_t)&InitializeASI,&pinned)) {
         log_line("REFUSED: cannot pin plugin lifetime.");goto done;
     }
-    if(!Aw2Install(&runtime,(BYTE*)GetModuleHandleW(NULL))) {
+    if(!Aw2Install(&runtime,(BYTE*)GetModuleHandleW(NULL),build)) {
         log_line(runtime.error);log_line("INACTIVE: validation/preparation failed; no fix installed.");goto done;
     }
     char detail[512];

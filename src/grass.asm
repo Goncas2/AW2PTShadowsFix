@@ -1,6 +1,6 @@
 BITS 64
 DEFAULT REL
-%define PATCH_VA 0x143f44e00
+; Build addresses are supplied by tools/generate_data.py.
 ORG PATCH_VA
 
 wrapper:
@@ -82,8 +82,8 @@ next_lod:
     mov r9d, edx
     mov edx, [rbx+0x48]
     lea r8, [rsp+0x20]
-    mov rcx, [rel wrapper + (0x14397ff60-PATCH_VA)]
-    call wrapper + (0x1422aab60-PATCH_VA)
+    mov rcx, [rel wrapper + (STATIC_MANAGER-PATCH_VA)]
+    call wrapper + (STATIC_REGISTRAR-PATCH_VA)
     or dword [rbx+0x4c], 0x400000
 finished:
     add rsp, strict dword 0xa0
@@ -93,7 +93,7 @@ wrapper_end:
 
 trampoline:
     mov [rsp+8], rbx
-    jmp wrapper + (0x1423040c5-PATCH_VA)
+    jmp wrapper + (REGISTER_RETURN-PATCH_VA)
 
 ALIGN 4, db 0
 unwind_info:
@@ -106,13 +106,13 @@ unwind_info:
 ALIGN 16, db 0
 helper_main:
     mov rdx, rbx
-    lea r10, [rel wrapper + (0x14225c633-PATCH_VA)]
+    lea r10, [rel wrapper + (MAIN_RETURN-PATCH_VA)]
     jmp helper_mark_static
 helper_visibility:
     mov rax, [rbp+0x18]
     lea rcx, [rdi+rbx]
     mov rdx, [rax+rcx*8]
-    lea r10, [rel wrapper + (0x14225c763-PATCH_VA)]
+    lea r10, [rel wrapper + (VISIBILITY_RETURN-PATCH_VA)]
 helper_mark_static:
     ; These entries borrow the original frame. Preserve RSP and R11.
     cmp byte [rsp+0x98], 0
@@ -146,4 +146,4 @@ ALIGN 4, db 0
 helper_unwind:
     ; Version 1, CHAININFO; inherit the full body fragment with R12/R15 saves.
     db 0x21, 0, 0, 0
-    dd 0x225c13d, 0x225c67b, 0x37c2518
+    dd PARENT_BEGIN, PARENT_END, PARENT_UNWIND

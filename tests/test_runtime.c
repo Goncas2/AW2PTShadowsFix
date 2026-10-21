@@ -1,5 +1,9 @@
 #include "../src/aw2_core.h"
-#include "../src/aw2_data.h"
+static const AW2Build *build;
+#define AW2_SOURCE_SIZE (build->file_size)
+#define AW2_PE_OFFSET (build->pe_offset)
+#define AW2_IMAGE_SIZE (build->image_size)
+#define aw2_specs (build->patches)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +64,7 @@ static void unwind_helper(BYTE *image,AW2State *s) {
     struct Point clean[]={{0x28,2},{0x2b,2},{0x2e,2},{0x5c,2},{0x60,1},{0x61,0}};
     for(unsigned i=0;i<6;i++) {
         CONTEXT c;memset(&c,0,sizeof(c));c.ContextFlags=CONTEXT_FULL;
-        c.Rip=(DWORD64)(uintptr_t)image+0x2304050+clean[i].offset;
+        c.Rip=(DWORD64)(uintptr_t)image+(build->patches[5].rva-0x28)+clean[i].offset;
         c.Rsp=entry-(clean[i].stage>=1?8:0)-(clean[i].stage>=2?0x20:0);
         c.Rbx=clean[i].stage==0?token:0x1111222233334444ULL;
         DWORD64 base=0,est=0;PVOID handler=NULL;PRUNTIME_FUNCTION f=RtlLookupFunctionEntry(c.Rip,&base,NULL);
@@ -70,8 +74,8 @@ static void unwind_helper(BYTE *image,AW2State *s) {
     VirtualFree(stack,0,MEM_RELEASE);
 }
 static void test_registration(BYTE *image,AW2State *s) {
-    make_ret(image+0x23040c5);make_stub(image+0x22aab60,(void*)(uintptr_t)&capture_static);
-    putptr(image,0x397ff60,(void*)0x1122334455667788ULL);
+    make_ret(image+build->relocations[2].target);make_stub(image+build->relocations[1].target,(void*)(uintptr_t)&capture_static);
+    putptr(image,build->relocations[0].target,(void*)0x1122334455667788ULL);
     BYTE object[0x100],mesh[0x500];
     void *opaque[24],*transparent[24],*overrides[16];
     for(unsigned i=0;i<24;i++){opaque[i]=(void*)(uintptr_t)(0x1000+i*16);transparent[i]=(void*)(uintptr_t)(0x2000+i*16);}
@@ -102,7 +106,7 @@ static void test_registration(BYTE *image,AW2State *s) {
     }
 }
 static void test_notifications(BYTE *image,AW2State *s) {
-    make_ret(image+0x225c633);make_ret(image+0x225c763);
+    make_ret(image+build->relocations[3].target);make_ret(image+build->relocations[4].target);
     BYTE object[0x100],manager[0x200],builder[0x300];void *objects[4]={0,0,0,object};
     DWORD ids[64];DWORD64 bitmap[16];
     for(unsigned vis=0;vis<2;vis++)for(unsigned rt=0;rt<2;rt++)for(unsigned mode=0;mode<4;mode++)for(unsigned count=0;count<=16;count++) {
@@ -125,29 +129,59 @@ static BYTE *make_image(const BYTE *raw,unsigned pass) {
     return image;
 }
 int main(int argc,char **argv) {
-    REQUIRE(argc==2);FILE *f=fopen(argv[1],"rb");REQUIRE(f);BYTE *raw=malloc(AW2_SOURCE_SIZE);REQUIRE(raw);
+    REQUIRE(argc==2);
+    wchar_t path[32768];char error[256];
+    REQUIRE(MultiByteToWideChar(CP_ACP,0,argv[1],-1,path,32768));
+    build=Aw2IdentifyFile(path,error,sizeof(error));
+    if(!build)fprintf(stderr,"%s\n",error);
+    REQUIRE(build);
+    printf("Verified test profile: %s\n",build->name);
+    REQUIRE(Aw2SelectBuild(build->file_size,build->hash)==build);
+    BYTE altered[32];memcpy(altered,build->hash,32);altered[0]^=1;
+    REQUIRE(!Aw2SelectBuild(build->file_size,altered));
+    REQUIRE(!Aw2SelectBuild(0,build->hash));
+    const AW2Build *other=Aw2Builds+(build==Aw2Builds?1:0);
+    REQUIRE(!Aw2SelectBuild(other->file_size,build->hash));
+    /* Exercise the same on-disk identification path used by InitializeASI. */
+    wchar_t temporary[MAX_PATH];REQUIRE(GetTempFileNameW(L"build",L"aw2",0,temporary));
+    HANDLE empty=CreateFileW(temporary,GENERIC_WRITE,0,NULL,TRUNCATE_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+    REQUIRE(empty!=INVALID_HANDLE_VALUE);LARGE_INTEGER length;length.QuadPart=build->file_size;
+    REQUIRE(SetFilePointerEx(empty,length,NULL,FILE_BEGIN)&&SetEndOfFile(empty));CloseHandle(empty);
+    REQUIRE(!Aw2IdentifyFile(temporary,error,sizeof(error))&&strstr(error,"SHA-256"));
+    empty=CreateFileW(temporary,GENERIC_WRITE,0,NULL,TRUNCATE_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+    REQUIRE(empty!=INVALID_HANDLE_VALUE);CloseHandle(empty);
+    REQUIRE(!Aw2IdentifyFile(temporary,error,sizeof(error))&&strstr(error,"size"));
+    REQUIRE(DeleteFileW(temporary));
+    REQUIRE(!Aw2IdentifyFile(temporary,error,sizeof(error))&&strstr(error,"cannot read"));
+    FILE *f=fopen(argv[1],"rb");REQUIRE(f);BYTE *raw=malloc(AW2_SOURCE_SIZE);REQUIRE(raw);
     REQUIRE(fread(raw,1,AW2_SOURCE_SIZE,f)==AW2_SOURCE_SIZE);REQUIRE(fgetc(f)==EOF);fclose(f);
     for(unsigned pass=0;pass<2;pass++) {
         BYTE *image=make_image(raw,pass),*baseline=malloc(AW2_IMAGE_SIZE);REQUIRE(baseline);memcpy(baseline,image,AW2_IMAGE_SIZE);
         IMAGE_NT_HEADERS64 *nt=(IMAGE_NT_HEADERS64*)(image+AW2_PE_OFFSET);
         IMAGE_DATA_DIRECTORY dir=nt->OptionalHeader.DataDirectory[3];PRUNTIME_FUNCTION original=(PRUNTIME_FUNCTION)(image+dir.VirtualAddress);
         REQUIRE(RtlAddFunctionTable(original,dir.Size/12,(DWORD64)(uintptr_t)image));
+        AW2State wrong={0};
+        REQUIRE(!Aw2Install(&wrong,image,other));
+        REQUIRE(!wrong.code&&!wrong.active&&!memcmp(image,baseline,AW2_IMAGE_SIZE));checks++;
+        AW2State unknown={0};
+        REQUIRE(!Aw2Install(&unknown,image,NULL));
+        REQUIRE(!unknown.code&&!unknown.active&&!memcmp(image,baseline,AW2_IMAGE_SIZE));checks++;
         /* A conflict must refuse the whole fix and leave all other bytes alone. */
-        image[aw2_specs[7].rva]^=1;AW2State rejected={0};REQUIRE(!Aw2Install(&rejected,image));
+        image[aw2_specs[7].rva]^=1;AW2State rejected={0};REQUIRE(!Aw2Install(&rejected,image,build));
         REQUIRE(!rejected.code&&!rejected.active);image[aw2_specs[7].rva]^=1;
         REQUIRE(!memcmp(image,baseline,AW2_IMAGE_SIZE));checks++;
-        AW2State s={0};REQUIRE(Aw2Install(&s,image));REQUIRE(s.active&&!s.protection_warning);
+        AW2State s={0};REQUIRE(Aw2Install(&s,image,build));REQUIRE(s.active&&!s.protection_warning);
         for(size_t i=0;i<8;i++){memcpy(baseline+aw2_specs[i].rva,s.replacements[i],aw2_specs[i].length);}
         REQUIRE(!memcmp(image,baseline,AW2_IMAGE_SIZE));checks++;
         /* Relocations are exactly the five references, plus runtime table metadata. */
-        BYTE reconstructed[496];REQUIRE(Aw2Relocate(reconstructed,(uintptr_t)s.code,(uintptr_t)image));REQUIRE(!memcmp(reconstructed,s.code,496));
-        REQUIRE(!Aw2Relocate(reconstructed,(uintptr_t)image+0x90000000ULL,(uintptr_t)image));checks++;
+        BYTE reconstructed[496];REQUIRE(Aw2Relocate(build,reconstructed,(uintptr_t)s.code,(uintptr_t)image));REQUIRE(!memcmp(reconstructed,s.code,496));
+        REQUIRE(!Aw2Relocate(build,reconstructed,(uintptr_t)image+0x90000000ULL,(uintptr_t)image));checks++;
         unwind_helper(image,&s);test_registration(image,&s);test_notifications(image,&s);
         REQUIRE(RtlDeleteFunctionTable(s.table));REQUIRE(RtlDeleteFunctionTable(original));
         VirtualFree(s.code,0,MEM_RELEASE);VirtualFree(image,0,MEM_RELEASE);free(baseline);
         printf("PASS pass=%u: relocated native payload, transactional byte audit, ABI/behavior and real Windows unwind\n",pass);
     }
     free(raw);
-    printf("PASS TOTAL: %u transaction/range checks; %u registration cases; %u notification cases; %u native unwind cases. No game code or live process executed/modified.\n",checks,registration_cases,notification_cases,unwind_cases);
+    printf("PASS TOTAL: 8 identity checks; %u transaction/range checks; %u registration cases; %u notification cases; %u native unwind cases. No game code or live process executed/modified.\n",checks,registration_cases,notification_cases,unwind_cases);
     return 0;
 }
